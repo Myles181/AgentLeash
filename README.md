@@ -231,7 +231,7 @@ Configure in your agent host:
 **Install**
 
 ```bash
-git clone https://github.com/your-username/agentleash
+git clone https://github.com/Myles181/AgentLeash
 cd agentleash
 npm install
 ```
