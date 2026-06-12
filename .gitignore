@@ -1,0 +1,28 @@
+# Environment — never commit private keys
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# Hardhat/Foundry artifacts
+artifacts/
+cache/
+typechain-types/
+
+# Third-party clones
+leash.market/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp

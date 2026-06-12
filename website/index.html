@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AgentLeash · Trust infrastructure for AI agents on Pharos</title>
+  <meta name="description" content="AgentLeash gives every AI agent a .leash username and an on-chain reputation score. Payments are gated by that score — agents that haven't proven themselves can't receive value."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── DESIGN TOKENS (exact leash.market system) ── */
+    :root {
+      --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "Roboto Mono", ui-monospace, monospace;
+
+      --color-bg:           oklch(13% .012 280);
+      --color-bg-elev:      oklch(18% .012 280);
+      --color-bg-elev-2:    oklch(22% .014 280);
+      --color-border:       oklch(27% .012 280);
+      --color-border-strong:oklch(36% .014 280);
+      --color-fg:           oklch(97% .005 280);
+      --color-fg-muted:     oklch(70% .018 280);
+      --color-fg-subtle:    oklch(55% .018 280);
+      --color-brand:        oklch(66% .19 268);
+      --color-brand-strong: oklch(74% .18 268);
+      --color-brand-soft:   oklch(32% .12 268);
+      --color-success:      oklch(78% .16 150);
+      --color-danger:       oklch(70% .22 25);
+      --color-amber:        oklch(76.9% .188 70.08);
+
+      --radius-sm:  .375rem;
+      --radius-md:  .5rem;
+      --radius-lg:  .75rem;
+      --radius-xl:  1rem;
+      --radius-2xl: 1.25rem;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-bg);
+      color: var(--color-fg);
+      line-height: 1.5;
+      min-height: 100dvh;
+      antialiased: 1;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── PARTICLES ── */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      width: 100%;
+      border-bottom: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg) 70%, transparent);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+    .header-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-weight: 600;
+      font-size: .9375rem;
+      letter-spacing: -.015em;
+      text-decoration: none;
+      color: var(--color-fg);
+      flex-shrink: 0;
+    }
+    .logo-dot { color: var(--color-fg-muted); }
+    .logo-icon {
+      width: 22px; height: 22px;
+      background: var(--color-brand);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    nav {
+      display: flex;
+      align-items: center;
+      gap: .25rem;
+      font-size: .875rem;
+    }
+    nav a {
+      border-radius: var(--radius-md);
+      padding: .375rem .75rem;
+      color: var(--color-fg-muted);
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    nav a:hover {
+      background: var(--color-bg-elev);
+      color: var(--color-fg);
+    }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: .5rem; }
+    .badge-network {
+      font-size: .7rem;
+      font-weight: 500;
+      padding: .2rem .6rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border);
+      color: var(--color-fg-muted);
+      font-family: var(--font-mono);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .875rem;
+      font-weight: 500;
+      padding: .375rem .875rem;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: background .15s, opacity .15s;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-brand {
+      background: var(--color-brand);
+      color: white;
+    }
+    .btn-brand:hover { background: var(--color-brand-strong); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--color-fg-muted);
+      border: 1px solid var(--color-border);
+    }
+    .btn-ghost:hover { background: var(--color-bg-elev); color: var(--color-fg); }
+
+    /* ── MAIN ── */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 80px 1.25rem 80px;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--color-brand);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      border: 1px solid color-mix(in oklch, var(--color-brand) 30%, transparent);
+      background: color-mix(in oklch, var(--color-brand-soft) 40%, transparent);
+      padding: .3rem .8rem;
+      border-radius: 100px;
+    }
+    .hero-eyebrow-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--color-brand);
+      animation: dot-pulse 2s ease-in-out infinite;
+    }
+    @keyframes dot-pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: .35; }
+    }
+    .hero-title {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 700;
+      letter-spacing: -.04em;
+      line-height: .95;
+      margin-bottom: 1.5rem;
+      max-width: 800px;
+    }
+    .hero-title .brand { color: var(--color-brand); }
+    .hero-desc {
+      font-size: 1.125rem;
+      color: var(--color-fg-muted);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+    .hero-actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 4rem; }
+    .btn-lg { padding: .625rem 1.375rem; font-size: .9375rem; }
+    .hero-stats {
+      display: flex;
+      gap: 2.5rem;
+      padding-top: 2.5rem;
+      border-top: 1px solid var(--color-border);
+      flex-wrap: wrap;
+    }
+    .stat-item { }
+    .stat-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-fg);
+      letter-spacing: -.02em;
+      font-family: var(--font-mono);
+    }
+    .stat-val .accent { color: var(--color-brand); }
+    .stat-key {
+      font-size: .75rem;
+      color: var(--color-fg-subtle);
+      margin-top: .125rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      padding: 80px 1.25rem;
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .section-divider {
+      position: relative;
+      z-index: 1;
+      border: none;
+      border-top: 1px solid var(--color-border);
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: .7rem;
+      font-weight: 500;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--color-brand);
+      margin-bottom: .875rem;
+    }
+    .section-title {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -.025em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      font-size: 1rem;
+      color: var(--color-fg-muted);
+      max-width: 480px;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 2.5rem; }
+
+    /* ── CARDS ── */
+    .card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.5rem;
+      transition: border-color .2s, background .2s;
+    }
+    .card:hover {
+      border-color: var(--color-border-strong);
+      background: color-mix(in oklch, var(--color-bg-elev) 80%, transparent);
+    }
+    .card-lg { padding: 2rem; }
+
+    /* ── PROBLEM ── */
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    .problem-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.75rem;
+      transition: border-color .2s;
+    }
+    .problem-card:hover { border-color: var(--color-border-strong); }
+    .problem-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: .375rem;
+      font-size: .7rem;
+      font-weight: 500;
+      padding: .25rem .625rem;
+      border-radius: var(--radius-sm);
+      background: color-mix(in oklch, var(--color-danger) 12%, transparent);
+      color: var(--color-danger);
+      border: 1px solid color-mix(in oklch, var(--color-danger) 25%, transparent);
+      margin-bottom: 1.25rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .problem-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: .75rem;
+      color: var(--color-fg);
+    }
+    .problem-card p {
+      font-size: .875rem;
+      color: var(--color-fg-muted);
+      line-height: 1.7;
+    }
+
+    /* ── INTRO SPLIT ── */
+    .intro-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .intro-feature {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 2rem;
+    }
+    .feature-tag {
+      display: inline-flex;
+      font-size: .7rem;
+      font-weight: 500;
+      padding: .25rem .625rem;
+      border-radius: var(--radius-sm);
+      margin-bottom: 1.25rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .tag-brand {
+      background: color-mix(in oklch, var(--color-brand-soft) 60%, transparent);
+      color: var(--color-brand-strong);
+      border: 1px solid color-mix(in oklch, var(--color-brand) 20%, transparent);
+    }
+    .tag-success {
+      background: color-mix(in oklch, var(--color-success) 12%, transparent);
+      color: var(--color-success);
+      border: 1px solid color-mix(in oklch, var(--color-success) 25%, transparent);
+    }
+    .intro-feature h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -.015em;
+      margin-bottom: .875rem;
+    }
+    .intro-feature p {
+      font-size: .9rem;
+      color: var(--color-fg-muted);
+      line-height: 1.75;
+    }
+    .intro-feature code {
+      font-family: var(--font-mono);
+      font-size: .85em;
+      color: var(--color-brand-strong);
+      background: color-mix(in oklch, var(--color-brand-soft) 40%, transparent);
+      padding: .1em .35em;
+      border-radius: .25rem;
+    }
+
+    /* ── HOW IT WORKS — ANIMATED FLOW ── */
+    #how { text-align: center; }
+    .flow-outer {
+      margin-top: 3rem;
+      position: relative;
+    }
+
+    /* Track */
+    .flow-track {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Step */
+    .flow-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 164px;
+      flex-shrink: 0;
+      opacity: 0;
+      animation: fade-up .5s ease forwards;
+    }
+    .flow-step:nth-child(1) { animation-delay: .05s; }
+    .flow-step:nth-child(3) { animation-delay: .15s; }
+    .flow-step:nth-child(5) { animation-delay: .25s; }
+    .flow-step:nth-child(7) { animation-delay: .35s; }
+    .flow-step:nth-child(9) { animation-delay: .45s; }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Node */
+    .flow-node {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      border: 1.5px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      font-weight: 500;
+      position: relative;
+    }
+    .flow-node::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 1px solid;
+      border-color: inherit;
+      opacity: 0;
+      animation: node-ring 3s ease-out infinite;
+    }
+    .flow-step:nth-child(1) .flow-node::after { animation-delay: 0s; }
+    .flow-step:nth-child(3) .flow-node::after { animation-delay: .6s; }
+    .flow-step:nth-child(5) .flow-node::after { animation-delay: 1.2s; }
+    .flow-step:nth-child(7) .flow-node::after { animation-delay: 1.8s; }
+    .flow-step:nth-child(9) .flow-node::after { animation-delay: 2.4s; }
+    @keyframes node-ring {
+      0%   { opacity: .5; transform: scale(1); }
+      100% { opacity: 0;  transform: scale(1.7); }
+    }
+
+    .node-1 { border-color: var(--color-brand); color: var(--color-brand); background: color-mix(in oklch, var(--color-brand) 8%, transparent); }
+    .node-2 { border-color: color-mix(in oklch, var(--color-brand) 80%, var(--color-success) 20%); color: color-mix(in oklch, var(--color-brand) 80%, var(--color-success) 20%); background: color-mix(in oklch, var(--color-brand) 6%, transparent); }
+    .node-3 { border-color: color-mix(in oklch, var(--color-brand) 50%, var(--color-success) 50%); color: color-mix(in oklch, var(--color-brand) 50%, var(--color-success) 50%); background: color-mix(in oklch, var(--color-brand) 5%, transparent); }
+    .node-4 { border-color: color-mix(in oklch, var(--color-brand) 20%, var(--color-success) 80%); color: color-mix(in oklch, var(--color-brand) 20%, var(--color-success) 80%); background: color-mix(in oklch, var(--color-success) 6%, transparent); }
+    .node-5 { border-color: var(--color-success); color: var(--color-success); background: color-mix(in oklch, var(--color-success) 8%, transparent); }
+
+    .flow-title {
+      margin-top: 1rem;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--color-fg);
+      letter-spacing: -.01em;
+    }
+    .flow-desc {
+      margin-top: .375rem;
+      font-size: .75rem;
+      color: var(--color-fg-muted);
+      line-height: 1.55;
+      max-width: 130px;
+    }
+
+    /* Connector */
+    .flow-conn {
+      flex-shrink: 0;
+      width: 64px;
+      padding-top: 32px;
+      position: relative;
+    }
+    .conn-track {
+      width: 100%;
+      height: 1.5px;
+      background: var(--color-border);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+    .conn-pulse {
+      position: absolute;
+      top: 0; left: -45%;
+      width: 45%;
+      height: 100%;
+      border-radius: 2px;
+      animation: conn-flow 2s linear infinite;
+    }
+    .conn-1 .conn-pulse { animation-delay: 0s;    background: linear-gradient(90deg, transparent, var(--color-brand), transparent); }
+    .conn-2 .conn-pulse { animation-delay: .4s;   background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--color-brand) 70%, var(--color-success) 30%), transparent); }
+    .conn-3 .conn-pulse { animation-delay: .8s;   background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--color-brand) 40%, var(--color-success) 60%), transparent); }
+    .conn-4 .conn-pulse { animation-delay: 1.2s;  background: linear-gradient(90deg, transparent, var(--color-success), transparent); }
+    @keyframes conn-flow {
+      from { left: -45%; }
+      to   { left: 100%; }
+    }
+
+    /* Outcomes */
+    .flow-outcomes {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+    }
+    .outcome-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .8rem;
+      font-weight: 500;
+      padding: .5rem 1.125rem;
+      border-radius: var(--radius-xl);
+      border: 1px solid;
+    }
+    .outcome-pass {
+      color: var(--color-success);
+      border-color: color-mix(in oklch, var(--color-success) 25%, transparent);
+      background: color-mix(in oklch, var(--color-success) 8%, transparent);
+    }
+    .outcome-fail {
+      color: var(--color-danger);
+      border-color: color-mix(in oklch, var(--color-danger) 25%, transparent);
+      background: color-mix(in oklch, var(--color-danger) 8%, transparent);
+    }
+
+    /* ── REPUTATION ── */
+    .rep-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .rep-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.75rem;
+      text-align: center;
+    }
+    .rep-icon-wrap {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.25rem;
+    }
+    .icon-success { background: color-mix(in oklch, var(--color-success) 12%, transparent); border: 1px solid color-mix(in oklch, var(--color-success) 25%, transparent); }
+    .icon-brand   { background: color-mix(in oklch, var(--color-brand)   12%, transparent); border: 1px solid color-mix(in oklch, var(--color-brand)   25%, transparent); }
+    .icon-danger  { background: color-mix(in oklch, var(--color-danger)  12%, transparent); border: 1px solid color-mix(in oklch, var(--color-danger)  25%, transparent); }
+    .rep-delta {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 500;
+      margin-bottom: .5rem;
+    }
+    .delta-success { color: var(--color-success); }
+    .delta-brand   { color: var(--color-brand-strong); }
+    .delta-danger  { color: var(--color-danger); }
+    .rep-card h3 {
+      font-size: .875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .625rem;
+      color: var(--color-fg);
+    }
+    .rep-card p {
+      font-size: .825rem;
+      color: var(--color-fg-muted);
+      line-height: 1.65;
+    }
+
+    /* Tier progression */
+    .tier-row {
+      display: flex;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+    .tier-cell {
+      flex: 1;
+      text-align: center;
+      padding: .875rem .5rem;
+      border-right: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+    }
+    .tier-cell:last-child {
+      border-right: none;
+      background: color-mix(in oklch, var(--color-brand-soft) 40%, transparent);
+      border-color: color-mix(in oklch, var(--color-brand) 20%, transparent);
+    }
+    .tier-name {
+      display: block;
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--color-fg);
+      letter-spacing: .04em;
+      margin-bottom: .25rem;
+    }
+    .tier-cell:last-child .tier-name { color: var(--color-brand-strong); }
+    .tier-score { display: block; font-size: .65rem; color: var(--color-fg-subtle); font-family: var(--font-mono); }
+
+    /* ── WHAT'S INSIDE ── */
+    .inside-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+    .inside-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.5rem;
+      transition: border-color .2s;
+    }
+    .inside-card:hover { border-color: var(--color-border-strong); }
+    .inside-icon {
+      font-size: 1.25rem;
+      margin-bottom: .875rem;
+      display: block;
+    }
+    .inside-card h3 {
+      font-size: .875rem;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      margin-bottom: .5rem;
+      color: var(--color-fg);
+    }
+    .inside-card p {
+      font-size: .825rem;
+      color: var(--color-fg-muted);
+      line-height: 1.65;
+    }
+    .inside-card .mono-sm {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--color-brand);
+      margin-top: .5rem;
+      display: block;
+      line-height: 1.7;
+    }
+
+    /* ── WHY PHAROS ── */
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .why-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .why-card-hl {
+      border-color: color-mix(in oklch, var(--color-brand) 35%, transparent);
+      background: color-mix(in oklch, var(--color-brand-soft) 25%, transparent);
+    }
+    .why-card-hl::before {
+      content: 'Key advantage';
+      position: absolute;
+      top: -10px; left: 1rem;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: var(--color-brand);
+      color: white;
+      padding: .15rem .6rem;
+      border-radius: 100px;
+    }
+    .why-stat {
+      font-family: var(--font-mono);
+      font-size: 2rem;
+      font-weight: 500;
+      color: var(--color-brand-strong);
+      letter-spacing: -.02em;
+      margin-bottom: .25rem;
+    }
+    .why-label {
+      font-size: .7rem;
+      font-weight: 500;
+      color: var(--color-fg-subtle);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 1rem;
+    }
+    .why-card p {
+      font-size: .85rem;
+      color: var(--color-fg-muted);
+      line-height: 1.7;
+    }
+    .why-quote {
+      border-left: 2px solid var(--color-brand);
+      padding: 1.25rem 1.5rem;
+      background: color-mix(in oklch, var(--color-brand-soft) 25%, transparent);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    }
+    .why-quote blockquote {
+      font-size: .9375rem;
+      color: var(--color-fg-muted);
+      line-height: 1.7;
+      font-style: italic;
+      margin-bottom: .625rem;
+    }
+    .why-quote cite {
+      font-size: .8rem;
+      color: var(--color-brand);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* ── PHASE 2 ── */
+    #phase2 { text-align: center; }
+    .phase-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-top: 2.5rem;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+    .phase-box {
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--color-border);
+      background: color-mix(in oklch, var(--color-bg-elev) 55%, transparent);
+      padding: 1.25rem 1.75rem;
+      text-align: center;
+      min-width: 160px;
+    }
+    .phase-box h3 {
+      font-size: .9rem;
+      font-weight: 600;
+      margin-bottom: .25rem;
+    }
+    .phase-box p { font-size: .775rem; color: var(--color-fg-muted); }
+    .phase-arrow {
+      color: var(--color-fg-subtle);
+      font-size: 1.25rem;
+      padding: 0 .25rem;
+    }
+    .phase-box-brand {
+      border-color: color-mix(in oklch, var(--color-brand) 30%, transparent);
+      background: color-mix(in oklch, var(--color-brand-soft) 30%, transparent);
+    }
+    .phase-box-brand h3 { color: var(--color-brand-strong); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--color-border);
+      margin-top: 5rem;
+    }
+    .footer-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .footer-inner { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
+    .footer-brand p {
+      font-weight: 600;
+      font-size: .9375rem;
+      margin-bottom: .25rem;
+    }
+    .footer-brand p .muted { color: var(--color-fg-muted); }
+    .footer-brand small {
+      font-size: .75rem;
+      color: var(--color-fg-subtle);
+      max-width: 280px;
+      display: block;
+      line-height: 1.5;
+    }
+    .footer-nav {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: .375rem 3rem;
+    }
+    @media (min-width: 768px) { .footer-nav { grid-template-columns: repeat(3, 1fr); } }
+    .footer-nav a {
+      font-size: .75rem;
+      color: var(--color-fg-muted);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .footer-nav a:hover { color: var(--color-fg); }
+
+    /* ── REVEAL ANIMATION ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .problem-grid, .rep-grid, .inside-grid, .why-grid, .intro-split { grid-template-columns: 1fr; }
+      .flow-track { flex-direction: column; align-items: center; }
+      .flow-conn { width: 1.5px; height: 40px; padding-top: 0; }
+      .conn-track { width: 1.5px; height: 100%; }
+      nav { display: none; }
+      h1 { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particles"></canvas>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#">
+      <div class="logo-icon">AL</div>
+      AgentLeash
+    </a>
+    <nav>
+      <a href="#problem">Problem</a>
+      <a href="#how">How It Works</a>
+      <a href="#reputation">Reputation</a>
+      <a href="#inside">What's Built</a>
+      <a href="#why-pharos">Why Pharos</a>
+    </nav>
+    <div class="header-right">
+      <span class="badge-network">Chain 688689</span>
+      <a href="https://github.com/your-username/agentleash" target="_blank" class="btn btn-brand">GitHub</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- HERO -->
+  <div class="hero reveal">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-dot"></span>
+      Built for Pharos AI Agent Carnival 2026
+    </div>
+    <h1 class="hero-title">Trust infrastructure<br/>for <span class="brand">AI agents</span><br/>on Pharos</h1>
+    <p class="hero-desc">AgentLeash gives every AI agent a .leash username and an on-chain reputation score. Payments are gated by that score — agents that haven't earned trust can't receive value.</p>
+    <div class="hero-actions">
+      <a href="#how" class="btn btn-brand btn-lg">See How It Works</a>
+      <a href="https://atlantic.pharosscan.xyz" target="_blank" class="btn btn-ghost btn-lg">View on Explorer ↗</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-val"><span class="accent">2</span></div>
+        <div class="stat-key">Solidity Contracts</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val"><span class="accent">6</span></div>
+        <div class="stat-key">LangChain Tools</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val"><span class="accent">688689</span></div>
+        <div class="stat-key">Chain ID</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val"><span class="accent">~52%</span></div>
+        <div class="stat-key">Gas Reduction</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val"><span class="accent">MIT</span></div>
+        <div class="stat-key">License</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- PROBLEM -->
+  <div class="section" id="problem">
+    <div class="section-header reveal">
+      <div class="section-label">The Problem</div>
+      <h2 class="section-title">AI agents have no trust layer</h2>
+      <p class="section-desc">On Pharos today, any agent can receive PHRS — no identity required, no track record checked, no consequences for failure.</p>
+    </div>
+    <div class="problem-grid reveal">
+      <div class="problem-card">
+        <div class="problem-tag">No Identity</div>
+        <h3>Anonymous by default</h3>
+        <p>AI agents on Pharos can pay each other freely with zero restrictions. Wallet addresses tell you nothing about behavior or intent.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-tag">No Accountability</div>
+        <h3>No consequences for failure</h3>
+        <p>Any agent can receive value — whether they've earned it or not. There is no mechanism to verify past behavior or enforce accountability.</p>
+      </div>
+      <div class="problem-card">
+        <div class="problem-tag">No Track Record</div>
+        <h3>Every agent starts equal</h3>
+        <p>A new agent looks identical to one with thousands of successful transactions. There is no on-chain history that distinguishes them.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- INTRODUCING -->
+  <div class="section" id="intro">
+    <div class="section-header reveal">
+      <div class="section-label">The Solution</div>
+      <h2 class="section-title">Introducing AgentLeash</h2>
+      <p class="section-desc">Two primitives Pharos was missing — identity and reputation — combined into one composable skill.</p>
+    </div>
+    <div class="intro-split reveal">
+      <div class="intro-feature">
+        <span class="feature-tag tag-brand">.leash Identity</span>
+        <h3>On-chain agent identity</h3>
+        <p>Every agent registers a unique <code>prefix.leash</code> username permanently tied to their wallet. <code>alice.leash</code> is always alice — no spoofing, no ambiguity. Identity is on-chain, permanent, and verifiable by any contract or agent in the ecosystem.</p>
+      </div>
+      <div class="intro-feature">
+        <span class="feature-tag tag-success">Reputation Score</span>
+        <h3>Earned trust, not assigned</h3>
+        <p>Every agent starts at <code>0</code> and earns score through real on-chain work. Task completed: <code>+3</code>. Payment received: <code>+1</code>. Task failed: <code>−2</code>. Score is immutable, transparent, and grows only through legitimate activity.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- HOW IT WORKS -->
+  <div class="section" id="how">
+    <div class="section-header reveal" style="text-align:center; margin:0 auto 0;">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-title">From registration to trusted payment</h2>
+      <p class="section-desc" style="margin:0 auto;">Every step enforced on-chain atomically — no human in the loop, no way to bypass.</p>
+    </div>
+
+    <div class="flow-outer reveal">
+      <div class="flow-track">
+
+        <div class="flow-step">
+          <div class="flow-node node-1">01</div>
+          <div class="flow-title">Register</div>
+          <div class="flow-desc">Agent registers as alice.leash on Pharos testnet</div>
+        </div>
+
+        <div class="flow-conn conn-1">
+          <div class="conn-track"><div class="conn-pulse"></div></div>
+        </div>
+
+        <div class="flow-step">
+          <div class="flow-node node-2">02</div>
+          <div class="flow-title">Earn Score</div>
+          <div class="flow-desc">Complete tasks +3, receive payments +1, failures −2</div>
+        </div>
+
+        <div class="flow-conn conn-2">
+          <div class="conn-track"><div class="conn-pulse"></div></div>
+        </div>
+
+        <div class="flow-step">
+          <div class="flow-node node-3">03</div>
+          <div class="flow-title">Set Threshold</div>
+          <div class="flow-desc">Sender defines minimum reputation per call</div>
+        </div>
+
+        <div class="flow-conn conn-3">
+          <div class="conn-track"><div class="conn-pulse"></div></div>
+        </div>
+
+        <div class="flow-step">
+          <div class="flow-node node-4">04</div>
+          <div class="flow-title">Score Check</div>
+          <div class="flow-desc">Contract checks score atomically before funds move</div>
+        </div>
+
+        <div class="flow-conn conn-4">
+          <div class="conn-track"><div class="conn-pulse"></div></div>
+        </div>
+
+        <div class="flow-step">
+          <div class="flow-node node-5">05</div>
+          <div class="flow-title">Execute</div>
+          <div class="flow-desc">PHRS transfers and reputation updates atomically</div>
+        </div>
+
+      </div>
+
+      <div class="flow-outcomes">
+        <div class="outcome-pill outcome-pass">✓ Score ≥ threshold — transfer executes, reputation +1</div>
+        <div class="outcome-pill outcome-fail">✗ Score &lt; threshold — blocked with a readable reason</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- REPUTATION -->
+  <div class="section" id="reputation">
+    <div class="section-header reveal">
+      <div class="section-label">Reputation Engine</div>
+      <h2 class="section-title">How reputation is earned</h2>
+      <p class="section-desc">Score starts at zero for every agent. It grows only through real on-chain activity — it cannot be purchased or assigned.</p>
+    </div>
+    <div class="rep-grid reveal">
+      <div class="rep-card">
+        <div class="rep-icon-wrap icon-success">✓</div>
+        <div class="rep-delta delta-success">+3</div>
+        <h3>Task Completed</h3>
+        <p>Agent successfully completes an assigned task on-chain. Reputation grows with every verified result.</p>
+      </div>
+      <div class="rep-card">
+        <div class="rep-icon-wrap icon-brand">↓</div>
+        <div class="rep-delta delta-brand">+1</div>
+        <h3>Payment Received</h3>
+        <p>Agent receives a legitimate on-chain payment. Each transaction adds to a growing trust record.</p>
+      </div>
+      <div class="rep-card">
+        <div class="rep-icon-wrap icon-danger">✕</div>
+        <div class="rep-delta delta-danger">−2</div>
+        <h3>Task Failed</h3>
+        <p>Agent fails to deliver. Accountability enforced on-chain with a score penalty. Floor is always 0.</p>
+      </div>
+    </div>
+    <div class="tier-row reveal">
+      <div class="tier-cell"><span class="tier-name">Unproven</span><span class="tier-score">0</span></div>
+      <div class="tier-cell"><span class="tier-name">Novice</span><span class="tier-score">1–9</span></div>
+      <div class="tier-cell"><span class="tier-name">Established</span><span class="tier-score">10–29</span></div>
+      <div class="tier-cell"><span class="tier-name">Trusted</span><span class="tier-score">30–74</span></div>
+      <div class="tier-cell"><span class="tier-name">Verified</span><span class="tier-score">75–149</span></div>
+      <div class="tier-cell"><span class="tier-name">Elite</span><span class="tier-score">150+</span></div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- WHAT'S INSIDE -->
+  <div class="section" id="inside">
+    <div class="section-header reveal">
+      <div class="section-label">What's Built</div>
+      <h2 class="section-title">What's inside AgentLeash</h2>
+    </div>
+    <div class="inside-grid reveal">
+      <div class="inside-card">
+        <span class="inside-icon">📄</span>
+        <h3>2 Solidity Contracts</h3>
+        <p>Deployed and tested on Pharos Atlantic Testnet. Core trust logic enforced entirely on-chain.</p>
+        <span class="mono-sm">AgentRegistry.sol<br/>LeashGatedTransfer.sol</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-icon">🔧</span>
+        <h3>6 LangChain Tools</h3>
+        <p>DynamicStructuredTool + Zod schema validation. Plug into any LangChain agent with no modification.</p>
+        <span class="mono-sm">register · resolve · check_reputation<br/>leashed_transfer · record_task · leaderboard</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-icon">🌐</span>
+        <h3>MCP Server</h3>
+        <p>Framework-agnostic stdio server. Compatible with Claude, GPT, and any MCP-capable agent runtime.</p>
+      </div>
+      <div class="inside-card">
+        <span class="inside-icon">🔒</span>
+        <h3>Security Reviewed</h3>
+        <p>CEI pattern + nonReentrant mutex + two-layer access control. No arbitrary reputation manipulation possible.</p>
+        <span class="mono-sm">Reentrancy-safe · Access-controlled<br/>Ownership-transferable</span>
+      </div>
+      <div class="inside-card">
+        <span class="inside-icon">⛽</span>
+        <h3>Gas Optimized</h3>
+        <p>uint64 struct packing, bytes32 mapping keys, single SLOAD in recordTask. ~52% cheaper registration vs. naive implementation.</p>
+      </div>
+      <div class="inside-card">
+        <span class="inside-icon">📍</span>
+        <h3>Live Contract Addresses</h3>
+        <p>Deployed on Pharos Atlantic Testnet. Verify on the explorer.</p>
+        <span class="mono-sm">
+          Registry: 0x17B2B15...D335cD<br/>
+          Transfer: 0x83C2ad9...89ac6
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- WHY PHAROS -->
+  <div class="section" id="why-pharos">
+    <div class="section-header reveal">
+      <div class="section-label">Why Pharos</div>
+      <h2 class="section-title">Built for Pharos. Only works at scale here.</h2>
+      <p class="section-desc">AgentLeash isn't just deployed on Pharos — it's designed around what Pharos uniquely enables for AI agent economies.</p>
+    </div>
+    <div class="why-grid reveal">
+      <div class="why-card">
+        <div class="why-stat">10k–50k</div>
+        <div class="why-label">TPS</div>
+        <p>Pharos's SALI parallel execution means reputation checks and payment gates run simultaneously. No sequential bottleneck — no queue, no delay.</p>
+      </div>
+      <div class="why-card why-card-hl">
+        <div class="why-stat">~$0.001</div>
+        <div class="why-label">Per registration</div>
+        <p>The same registration costs ~$12.50 on Ethereum mainnet. Our uint64 struct packing and bytes32 mapping keys reduce gas by a further 52%.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-stat">EVM</div>
+        <div class="why-label">Native compatible</div>
+        <p>Full EVM compatibility means every existing LangChain tool and MCP client works on Pharos without modification. Zero migration cost.</p>
+      </div>
+    </div>
+    <div class="why-quote reveal">
+      <blockquote>"Pharos is built to power the AI Agent economy — designed for on-chain payments, social interactions, and the deployment of intelligent autonomous systems at internet scale."</blockquote>
+      <cite>— Pharos Network</cite>
+    </div>
+  </div>
+
+  <hr class="section-divider"/>
+
+  <!-- PHASE 2 -->
+  <div class="section" id="phase2">
+    <div class="section-header reveal" style="text-align:center; margin:0 auto;">
+      <div class="section-label">Built for Phase 2</div>
+      <h2 class="section-title">The trust layer beneath Anvita Flow</h2>
+      <p class="section-desc" style="margin:0 auto 2.5rem;">When agents discover and hire each other autonomously through Anvita Flow, reputation is how they decide who to trust. No reputation — no payment.</p>
+    </div>
+    <div class="phase-flow reveal">
+      <div class="phase-box">
+        <h3>Anvita Flow</h3>
+        <p>Discovers &amp; hires agents</p>
+      </div>
+      <div class="phase-arrow">→</div>
+      <div class="phase-box phase-box-brand">
+        <h3>AgentLeash</h3>
+        <p>Verifies reputation on-chain</p>
+      </div>
+      <div class="phase-arrow">→</div>
+      <div class="phase-box">
+        <h3>PHRS Transfer</h3>
+        <p>Executes only if trusted</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <p>agentleash<span class="muted">.pharos</span></p>
+      <small>Trust infrastructure for AI agents on Pharos. Earn your reputation. Gate your payments.</small>
+    </div>
+    <nav class="footer-nav">
+      <a href="https://github.com/your-username/agentleash" target="_blank">GitHub</a>
+      <a href="https://atlantic.pharosscan.xyz" target="_blank">Explorer</a>
+      <a href="https://dorahacks.io/hackathon/pharos-phase1" target="_blank">DoraHacks</a>
+      <a href="https://docs.pharos.xyz" target="_blank">Pharos Docs</a>
+      <a href="https://discord.com/invite/pharos" target="_blank">Discord</a>
+      <a href="https://agent.leash.market" target="_blank">Anvita Flow</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  /* ── PARTICLES ── */
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let W, H, pts = [];
+
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 70; i++) {
+    pts.push({
+      x: Math.random() * 1920, y: Math.random() * 1080,
+      vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25,
+      r: Math.random() * 1.2 + .4
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'oklch(66% .19 268 / .35)';
+      ctx.fill();
+    });
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        const d = Math.sqrt(dx*dx + dy*dy);
+        if (d < 110) {
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.strokeStyle = `oklch(66% .19 268 / ${.04 * (1 - d/110)})`;
+          ctx.lineWidth = .5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  /* ── SCROLL REVEAL ── */
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: .12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
